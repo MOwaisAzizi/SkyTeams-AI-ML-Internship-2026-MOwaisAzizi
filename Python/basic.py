@@ -1,5 +1,4 @@
 # start of practice
-print('hello python')
 
 x = str(3)
 y = float(5)

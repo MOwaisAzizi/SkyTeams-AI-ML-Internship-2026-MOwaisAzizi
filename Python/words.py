@@ -10,5 +10,4 @@ words = [
     'hello',
     'owisi',
     'hie',
-
 ]

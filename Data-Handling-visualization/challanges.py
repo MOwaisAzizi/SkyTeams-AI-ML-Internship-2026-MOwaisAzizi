@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 data = pd.read_csv('iris_data.csv')
 
@@ -42,18 +43,11 @@ ax = plt.axes()
 plt.hist(data.petal_length, bins=25)
 ax.set(xlabel = 'Lenght', ylabel='Frequency', title='graph')
 
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-
 data = pd.read_csv('iris_data.csv')
 data.head()
 
 #starting new project new example part 2
-import pandas as pd
-import seaborn as sns
 sns.set()
-
 df = pd.read_csv('Ames_Housing_Data.tsv', sep='\t')
 # df.head()
 df.info()

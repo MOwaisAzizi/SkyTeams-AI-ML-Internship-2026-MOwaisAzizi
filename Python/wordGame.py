@@ -29,7 +29,6 @@ def game():
         if user_letter in alphabet - used_letters:
             used_letters.add(user_letter)
             if user_letter in words_letter:
-               print('deleting......🧡🎉🐥....................')
                print(user_letter)
                words_letter.remove(user_letter)
         elif user_letter in used_letters:
