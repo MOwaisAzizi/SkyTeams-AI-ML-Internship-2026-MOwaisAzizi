@@ -76,7 +76,7 @@ def gradient_descent(x, y, w, b, alpha, num_iters):
 w_init = 0
 b_init = 0
 alpha = 0.01
-iterations = 100
+iterations = 2000
 
 w_final, b_final, J_history = gradient_descent(
     x, y, w_init, b_init, alpha, iterations

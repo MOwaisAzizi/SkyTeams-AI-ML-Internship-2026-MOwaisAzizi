@@ -27,7 +27,20 @@ def normalization(X, mean, X_std, number_features):
 
     return normalized 
     
-        
+      def normalization(X, mean, X_std):
+    m = len(X)
+    n = len(X[0])
+
+    X_norm = []
+
+    for i in range(m):          # rows (houses)
+        row = []
+        for j in range(n):      # features
+            value = (X[i][j] - mean[j]) / X_std[j]
+            row.append(value)
+        X_norm.append(row)
+
+    return X_norm  
 
 # =========================
 # Training Data
