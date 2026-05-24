@@ -89,5 +89,5 @@ print("b =", b_final)
 # -------------------------
 # Test prediction
 # -------------------------
-x_test = 5
+x_test = 2
 print("\nPrediction for x=5:", predict(x_test, w_final, b_final))
