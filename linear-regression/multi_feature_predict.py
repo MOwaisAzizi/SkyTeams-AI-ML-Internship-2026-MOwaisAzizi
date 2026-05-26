@@ -1,138 +1,212 @@
 import numpy as np
 import math
 
-# Simple mean function
-def mean(data, col):
+# =========================
+# HELPER FUNCTIONS
+# =========================
+
+def calculate_mean(data, column_index):
+    """Calculate mean of a specific column"""
     total = 0
     for row in range(len(data)):
-        total += data[row][col]
+        total += data[row][column_index]
     return total / len(data)
 
-# Simple standard deviation function (like your example)
-def std(data, col, mean_val):
+def calculate_std(data, column_index, mean_value):
+    """Calculate standard deviation of a specific column"""
     variance = 0
     for row in range(len(data)):
-        variance += (data[row][col] - mean_val) ** 2
+        variance += (data[row][column_index] - mean_value) ** 2
     variance = variance / len(data)
     return math.sqrt(variance)
 
-# Simple normalization
-def normalize(X):
+def normalize_data(X):
+    """Normalize all features using z-score normalization"""
     rows = len(X)
     cols = len(X[0])
-    normalized = []
+    normalized_matrix = []
     
     for row in range(rows):
         new_row = []
         for col in range(cols):
-            mean_val = mean(X, col)
-            std_val = std(X, col, mean_val)
+            mean_val = calculate_mean(X, col)
+            std_val = calculate_std(X, col, mean_val)
             norm_val = (X[row][col] - mean_val) / std_val
             new_row.append(norm_val)
-        normalized.append(new_row)
+        normalized_matrix.append(new_row)
     
-    return normalized
+    return normalized_matrix
 
-# Run it
-result = normalize(X)
-# Training Data
 # =========================
+# LOAD AND PREPARE DATA
+# =========================
+
+# Training features
 X = np.array([
     [2104, 5, 1, 45],
     [1416, 3, 2, 40],
     [852,  2, 1, 35]
 ])
 
-# Prices
+# Target prices (in thousands)
 y = np.array([460, 232, 178])
 
-number_training_examples = X.shape[0]   # number of training examples
-number_features = X.shape[1]   # number of features
+# Data dimensions
+num_training_examples = X.shape[0]  # Number of training examples (m)
+num_features = X.shape[1]            # Number of features (n)
+
+# Normalize features
+X_normalized = normalize_data(X)
+
+# Calculate mean and std for future predictions (using original X)
+X_mean = np.zeros(num_features)
+X_std = np.zeros(num_features)
+for col in range(num_features):
+    X_mean[col] = calculate_mean(X, col)
+    X_std[col] = calculate_std(X, col, X_mean[col])
 
 # =========================
-# Feature Scaling
+# INITIALIZE PARAMETERS
 # =========================
 
-X_mean = np.mean(X, axis=0)
-X_std = np.std(X, axis=0)
-X_norm = (X - X_mean) / X_std
+weights = np.zeros(num_features)  # Initialize weights to 0
+bias = 0                          # Initialize bias to 0
+learning_rate = 0.01
+num_iterations = 1000
 
 # =========================
-# Initialize Parameters
-# =========================
-w = np.zeros(number_features)
-b = 0
-alpha = 0.01
-iterations = 1000
-
-# =========================
-# Cost Function
+# MODEL FUNCTIONS
 # =========================
 
-def compute_cost(X, y, w, b):
-    m = X.shape[0]
+def predict(X, weights, bias):
+    """Make predictions using linear regression"""
+    predictions = []
+    for row in range(len(X)):
+        current_prediction = 0
+        for col in range(len(X[row])):
+            current_prediction += weights[col] * X[row][col]
+        current_prediction += bias
+        predictions.append(current_prediction)
+    return predictions
 
-    predictions = X @ w + b
+def compute_cost(X, weights, bias, y):
+    """Calculate mean squared error cost"""
+    m = len(y)
+    predictions = predict(X, weights, bias)  # Fixed: renamed variable to avoid conflict
+    
+    total_cost = 0
+    for i in range(m):
+        total_cost += (predictions[i] - y[i]) ** 2
+    
+    total_cost = total_cost / (2 * m)
+    return total_cost
 
-    cost = (1 / (2 * m)) * np.sum((predictions - y) ** 2)
+def compute_weight_derivative(X, weights, y, bias, feature_index):
+    """Calculate derivative for a specific weight"""
+    predictions = predict(X, weights, bias)
+    error_sum = 0
+    
+    for i in range(len(y)):
+        error_sum += (predictions[i] - y[i]) * X[i][feature_index]  # Fixed: predictions - y
+    
+    derivative = error_sum / len(y)
+    return derivative
 
-    return cost
+def compute_bias_derivative(X, weights, y, bias):
+    """Calculate derivative for bias"""
+    predictions = predict(X, weights, bias)
+    error_sum = 0
+    
+    for i in range(len(y)):
+        error_sum += (predictions[i] - y[i])  # Removed X[i][col_index]
+    
+    derivative = error_sum / len(y)
+    return derivative
+
+def gradient_descent(X, y, weights, bias, learning_rate, num_iterations):
+    """Perform gradient descent to optimize parameters"""
+    num_features = len(weights)
+    
+    for iteration in range(num_iterations):
+        new_weights = []
+        
+        # Update all weights
+        for feature_idx in range(num_features):
+            weight_derivative = compute_weight_derivative(X, weights, y, bias, feature_idx)
+            new_weight = weights[feature_idx] - learning_rate * weight_derivative
+            new_weights.append(new_weight)
+        
+        # Update bias
+        bias_derivative = compute_bias_derivative(X, weights, y, bias)
+        new_bias = bias - learning_rate * bias_derivative
+        
+        # Simultaneous update
+        weights = new_weights
+        bias = new_bias
+        
+        # Print progress every 100 iterations
+        if iteration % 100 == 0:
+            current_cost = compute_cost(X, weights, bias, y)
+            print(f"Iteration {iteration}, Cost: {current_cost:.4f}")
+    
+    return weights, bias
 
 # =========================
-# Gradient Descent
+# TRAIN MODEL
 # =========================
 
-def gradient_descent(X, y, w, b, alpha, iterations):
+print("=" * 50)
+print("TRAINING LINEAR REGRESSION MODEL")
+print("=" * 50)
 
-    m = X.shape[0]
+# Calculate initial cost
+initial_cost = compute_cost(X_normalized, weights, bias, y)
+print(f"Initial Cost: {initial_cost:.4f}")
 
-    for i in range(iterations):
+# Train the model
+trained_weights, trained_bias = gradient_descent(
+    X_normalized, y, weights, bias, learning_rate, num_iterations
+)
 
-        predictions = X @ w + b
+# Calculate final cost
+final_cost = compute_cost(X_normalized, trained_weights, trained_bias, y)
+print(f"\nFinal Cost: {final_cost:.4f}")
 
-        error = predictions - y
-
-        # Derivatives
-        dj_dw = (1 / m) * (X.T @ error)
-        dj_db = (1 / m) * np.sum(error)
-
-        # Update parameters
-        w = w - alpha * dj_dw
-        b = b - alpha * dj_db
-
-        # Print cost every 100 iterations
-        if i % 100 == 0:
-            cost = compute_cost(X, y, w, b)
-            print(f"Iteration {i}: Cost = {cost:.2f}")
-
-    return w, b
+# Display trained parameters
+print("\nTrained Parameters:")
+for i in range(num_features):
+    print(f"  Weight {i}: {trained_weights[i]:.4f}")
+print(f"  Bias: {trained_bias:.4f}")
 
 # =========================
-# Train Model
+# MAKE PREDICTIONS
 # =========================
 
-initial_cost = compute_cost(X_norm, y, w, b)
+print("\n" + "=" * 50)
+print("MAKING PREDICTIONS")
+print("=" * 50)
 
-print("Initial Cost:", initial_cost)
+# Predict on training data
+training_predictions = predict(X_normalized, trained_weights, trained_bias)
+print("\nTraining Data Predictions:")
+for i in range(num_training_examples):
+    print(f"  House {i+1}: Predicted={training_predictions[i]:.2f}, Actual={y[i]:.2f}")
 
-w, b = gradient_descent(X_norm, y, w, b, alpha, iterations)
-
-final_cost = compute_cost(X_norm, y, w, b)
-
-print("\nFinal Cost:", final_cost)
-
-# =========================
-# Prediction
-# =========================
-
-# New house:
-# 2000 sqft, 4 bedrooms, 1 floor, 30 years old
-
+# Predict for a new house
 new_house = np.array([2000, 4, 1, 30], dtype=float)
 
-# Normalize using training mean/std
-new_house_norm = (new_house - X_mean) / X_std
+# Normalize using training statistics
+new_house_normalized = []
+for col in range(num_features):
+    norm_val = (new_house[col] - X_mean[col]) / X_std[col]
+    new_house_normalized.append(norm_val)
 
-predicted_price = np.dot(new_house_norm, w) + b
+# Make prediction
+predicted_price = 0
+for col in range(num_features):
+    predicted_price += trained_weights[col] * new_house_normalized[col]
+predicted_price += trained_bias
 
-print("\nPredicted Price:", predicted_price, "thousand dollars")
+print(f"\nNew House Features: {new_house}")
+print(f"Predicted Price: ${predicted_price:.2f} thousand dollars")
+print(f"Predicted Price: ${predicted_price * 1000:.2f} dollars")
