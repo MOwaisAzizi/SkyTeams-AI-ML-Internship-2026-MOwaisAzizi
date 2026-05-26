@@ -1,48 +1,40 @@
 import numpy as np
+import math
 
-mean(row,number_features):
+# Simple mean function
+def mean(data, col):
     total = 0
-    for i in range(number_features):
-        total += row[i]
-    mean = total/number_features
-    return mean
+    for row in range(len(data)):
+        total += data[row][col]
+    return total / len(data)
 
-std(row,number_features,mean):
-    varyance = 0
-    for i in range(number_features):
-        varyance += (row[i] - mean) ** 2
-    
-    varyance = varyance / number_featured
-    std = math.sqr(varyance) 
-        
-        
-        # X_norm = (X - X_mean) / X_std
-# 
-def normalization(X, mean, X_std, number_features):
+# Simple standard deviation function (like your example)
+def std(data, col, mean_val):
+    variance = 0
+    for row in range(len(data)):
+        variance += (data[row][col] - mean_val) ** 2
+    variance = variance / len(data)
+    return math.sqrt(variance)
+
+# Simple normalization
+def normalize(X):
+    rows = len(X)
+    cols = len(X[0])
     normalized = []
-
-    for i in range(number_features):
-        value = (X[i] - mean[i]) / X_std[i]
-        normalized.append(value)
-
-    return normalized 
     
-      def normalization(X, mean, X_std):
-    m = len(X)
-    n = len(X[0])
+    for row in range(rows):
+        new_row = []
+        for col in range(cols):
+            mean_val = mean(X, col)
+            std_val = std(X, col, mean_val)
+            norm_val = (X[row][col] - mean_val) / std_val
+            new_row.append(norm_val)
+        normalized.append(new_row)
+    
+    return normalized
 
-    X_norm = []
-
-    for i in range(m):          # rows (houses)
-        row = []
-        for j in range(n):      # features
-            value = (X[i][j] - mean[j]) / X_std[j]
-            row.append(value)
-        X_norm.append(row)
-
-    return X_norm  
-
-# =========================
+# Run it
+result = normalize(X)
 # Training Data
 # =========================
 X = np.array([
