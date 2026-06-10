@@ -18,6 +18,20 @@ columns_to_keep = [
 
 df = df[columns_to_keep]
 
+# DATA TYPE CASTING - NUMERIC COLUMNS
+numeric_columns = [
+    "price_per_night",
+    "total_price",
+    "nights",
+]
+
+for col in numeric_columns:
+    df[col] = pd.to_numeric(
+        df[col],
+        errors="coerce"
+    )
+
+
 # Remove duplicated rows to prevent the same
 df = df.drop_duplicates()
 
@@ -40,26 +54,12 @@ df["payment_status"] = (
     .str.strip()
 )
 
-valid_statuses = [
-    "paid",
-    "pending",
-    "unpaid"
-]
-
-df.loc[
-    ~df["payment_status"].isin(valid_statuses),
-    "payment_status"
-] = np.nan
-
-df["payment_status"] = (
-    df["payment_status"]
-    .fillna("pending")
+df = pd.get_dummies(
+    df,
+    columns=["payment_status"],
+    dtype=int
 )
 
-# Convert different representations of yes/no values
-# into a binary format:
-# 1 = cancelled
-# 0 = not cancelled
 
 df["is_cancelled"] = (
     df["is_cancelled"]
@@ -82,6 +82,7 @@ cancel_map = {
 df["is_cancelled"] = (
     df["is_cancelled"]
     .map(cancel_map)
+    .astype(int)
 )
 
 df["is_cancelled"] = (
@@ -89,18 +90,6 @@ df["is_cancelled"] = (
     .fillna(0)
 )
 
-# DATA TYPE CASTING - NUMERIC COLUMNS
-numeric_columns = [
-    "price_per_night",
-    "total_price",
-    "nights"
-]
-
-for col in numeric_columns:
-    df[col] = pd.to_numeric(
-        df[col],
-        errors="coerce"
-    )
 
 # FEATURE ENGINEERING - CALCULATED NIGHTS
 df["nights_calculated"] = (
@@ -126,70 +115,30 @@ df["nights"] = (
     .fillna(df["nights"].median())
 )
 
-# FEATURE EXTRACTION - DATE COMPONENTS
-# Extract useful information from the check-in date.
-df["checkin_year"] = (
-    df["checkin_date"].dt.year
-)
-
-df["checkin_month"] = (
-    df["checkin_date"].dt.month
-)
-
-df["checkin_day"] = (
-    df["checkin_date"].dt.day
-)
-
 df["checkin_weekday"] = (
-    df["checkin_date"].dt.dayofweek
+    df["checkin_date"]
+    .dt.dayofweek
+    .fillna(-1)
+    .astype(int)
 )
 
-df["is_weekend_checkin"] = (
-    df["checkin_weekday"] >= 5
-).astype(int)
-
+print('-----------------')
+print(df["checkin_date"].isna().sum())
 
 # FEATURE SELECTION
 df.drop(
     columns=[
         "checkin_date",
         "checkout_date",
-        "nights_calculated"
+        "nights_calculated",
     ],
     inplace=True
 )
-
-
-# FEATURE ENGINEERING - EXPECTED TOTAL PRICE
-df["expected_total"] = (
-    df["price_per_night"] *
-    df["nights"]
-)
-
-# FEATURE ENGINEERING - PRICE DIFFERENCE
-df["price_difference"] = (
-    df["total_price"] -
-    df["expected_total"]
-)
-
-# FEATURE ENGINEERING - AVERAGE NIGHTLY SPEND
-df["average_nightly_spend"] = (
-    df["total_price"] /
-    df["nights"]
-)
-
-# FEATURE ENGINEERING - LONG STAY FLAG
-df["long_stay"] = (
-    df["nights"] >= 7
-).astype(int)
 
 # MISSING VALUE IMPUTATION - NUMERIC FEATURES
 numeric_features = [
     "price_per_night",
     "total_price",
-    "expected_total",
-    "price_difference",
-    "average_nightly_spend"
 ]
 
 for col in numeric_features:
@@ -197,6 +146,28 @@ for col in numeric_features:
         df[col]
         .fillna(df[col].median())
     )
+
+city_map = {
+    "la": "los_angeles",
+    "los angeles": "los_angeles",
+    "los_angeles": "los_angeles",
+
+    "nyc": "new_york",
+    "new york": "new_york",
+    "new_york": "new_york",
+
+    "sf": "san_francisco",
+    "san fran": "san_francisco",
+    "san francisco": "san_francisco"
+}
+
+df["listing_city"] = (
+    df["listing_city"]
+    .astype(str)
+    .str.lower()
+    .str.strip()
+    .replace(city_map)
+)
 
 # DATA CLEANING - CITY NAMES
 df["listing_city"] = (
@@ -206,14 +177,16 @@ df["listing_city"] = (
     .str.strip()
 )
 
-# ONE-HOT ENCODING
-# Convert categorical variables into numerical
+df.drop(df[df["listing_city"] == "unknown"].index, inplace=True)
+
+# # ONE-HOT ENCODING
+# # Convert categorical variables into numerical
 df = pd.get_dummies(
     df,
     columns=[
         "listing_city",
-        "payment_status"
-    ]
+    ],
+        dtype=int
 )
 
 # FEATURE SCALING (MIN-MAX NORMALIZATION)
@@ -221,15 +194,15 @@ scale_columns = [
     "price_per_night",
     "total_price",
     "nights",
-    "expected_total",
-    "price_difference",
-    "average_nightly_spend"
 ]
 
 for col in scale_columns:
     min_val = df[col].min()
     max_val = df[col].max()
-
+    
+    print('-----------')
+    print(min_val, max_val)
+    print(f"Column '{col}' - Min: {min_val}, Max: {max_val}")
     if max_val != min_val:
         df[col] = (
             (df[col] - min_val)
@@ -253,6 +226,6 @@ print("Testing Shape:", test_df.shape)
 
 print("\nColumns:")
 print(df.columns.tolist())
-
+print(df.info())
 print("\nDataset Preview:")
-print(df.head(10))
+print(df.head(20))
