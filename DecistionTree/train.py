@@ -3,7 +3,7 @@ from collections import Counter
 
 class Node:
     def __init__(self, feature=None, threshold=None, left=None, right=None, value=None):
-        self.feature = feature
+        self.feature = feature#index of featured
         self.threshold = threshold
         self.left = left
         self.right = right
@@ -14,8 +14,8 @@ class Node:
     
 class DecisionTree:
     def __init__(self, min_samples_split=2, max_depth=100, n_features=None):
-        self.min_samples_split = min_samples_split
-        self.max_depth = max_depth
+        self.min_samples_split = min_samples_split # how many simple data is in node 
+        self.max_depth = max_depth # hom many branch should we go
         self.n_features = n_features
         self.root = None
     
@@ -33,8 +33,8 @@ class DecisionTree:
             return Node(value=leaf_value)
         
         #find the best split
-        feat_idxs = np.random.choice(n_features, self.n_features, replace=False)
-        best_feature, best_thresh = self.best_split(X, y, feat_idxs)
+        feature_indexes = np.random.choice(n_features, self.n_features, replace=False)
+        best_feature, best_thresh = self.best_split(X, y, feature_indexes)
         
         #create child nodes
         left_idxs, right_idxs = self._split(X[:, best_feature], best_thresh)
@@ -42,19 +42,19 @@ class DecisionTree:
         right = self._grow_tree(X[right_idxs, :], y[right_idxs], depth + 1)
         return Node(best_feature, best_thresh, left, right)
     
-    def best_split(self, X, y, feat_idxs):
+    def best_split(self, X, y, feature_indexes):
         best_gain = -1
         split_idx, split_thresh = None, None
         
-        for feat_idx in feat_idxs:
-            X_column = X[:, feat_idx]
+        for feature_index in feature_indexes:
+            X_column = X[:, feature_index]# the i column of the data
             thresholds = np.unique(X_column)
             for threshold in thresholds:
-                gain = self._information_gain(y, X_column, threshold)
+                gain = self._information_gain(y, X_column, threshold)# just on number of culumn
                 
                 if gain > best_gain:
                     best_gain = gain
-                    split_idx = feat_idx
+                    split_idx = feature_index # it comptite with it self coulumn and also to all other colums
                     split_thresh = threshold
         
         return split_idx, split_thresh
