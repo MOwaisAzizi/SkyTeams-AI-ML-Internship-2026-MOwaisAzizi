@@ -10,7 +10,6 @@ print(response.content)
 #defind llm using huggingface
 # Import the class for defining Hugging Face pipelines
 from langchain_huggingface import HuggingFacePipeline
-
 # Define the LLM from the Hugging Face model ID
 llm = HuggingFacePipeline.from_model_id(
     model_id="crumb/nano-mistral",
